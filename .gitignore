@@ -1,3 +1,19 @@
+# ── FSAR project ────────────────────────────────────────────────────────────
+# Raw FHIR data (large, not committed)
+data/
+
+# Generated artifacts (reproducible from data + code)
+artifacts/
+
+# IDE
+.idea/
+
+# Binary/serialised artifacts
+*.pkl
+*.npy
+*.parquet
+
+# ── Python ───────────────────────────────────────────────────────────────────
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
