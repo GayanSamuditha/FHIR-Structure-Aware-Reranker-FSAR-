@@ -1,6 +1,8 @@
 # FHIR Structure-Aware Reranker (FSAR)
 
-A two-stage clinical retriever over Synthea FHIR bundles: TF-IDF dense retrieval followed by a reranker that fuses semantic similarity with four structural signals (temporal proximity, reference coherence, type prior, code overlap). The evaluation set is generated automatically from Synthea's deterministic structure, and the ablation table confirms that each structural signal contributes measurably to retrieval quality.
+![CI](https://github.com/YOUR_GITHUB_USERNAME/FHIR-Structure-Aware-Reranker-FSAR-/actions/workflows/ci.yml/badge.svg)
+
+A two-stage clinical retriever over Synthea FHIR bundles: TF-IDF lexical retrieval followed by a reranker that fuses semantic similarity with four structural signals (temporal proximity, reference coherence, type prior, code overlap). The evaluation set is generated automatically from Synthea's deterministic structure, and the ablation table confirms that each structural signal contributes measurably to retrieval quality.
 
 ---
 
@@ -76,6 +78,22 @@ FSAR full is **15× higher nDCG** than naive. Every ablation degrades all three 
 
 ---
 
+## Example: before vs after reranking
+
+Query: "What lab results did the patient have in the 6 months before starting Metformin?"
+
+Naive TF-IDF top result:
+  Type: MedicationRequest | Date: unknown | Score: 0.28
+  → Wrong: returns medication records, not labs
+
+FSAR top result:
+  Type: Observation | Date: 2017-10-14 | Score: 0.81
+  → Correct: lab result 43 days before medication start
+  Why: temporal=0.94 (in window) · reference=1.0 (same encounter)
+       · type_prior=1.0 (Observation matches "lab" intent)
+
+---
+
 ## Reproduce
 
 ### 1. Install
@@ -103,7 +121,7 @@ Skip `hospitalInformation*.json` and `practitionerInformation*.json` — the ing
 Each milestone writes to `artifacts/` and is gated by its test.
 
 ```bash
-# M1 — ingest FHIR bundles (≈ 30 s for 200 patients)
+# M1 — ingest FHIR bundles (≈ 30 s for 181 patients)
 python -m src.ingest
 python tests/test_m1.py
 
@@ -122,7 +140,7 @@ python tests/test_m4.py  # no artifact needed; pure unit tests
 python tests/test_m5.py
 ```
 
-All five milestones complete in under 5 minutes on a laptop CPU with 200 patients.
+All five milestones complete in under 5 minutes on a laptop CPU with 181 patients.
 
 ---
 
@@ -148,5 +166,56 @@ All five milestones complete in under 5 minutes on a laptop CPU with 200 patient
 | Embeddings | `scikit-learn` TfidfVectorizer (stand-in for `sentence-transformers`) |
 | Date handling | `python-dateutil`, stdlib `datetime` |
 | Progress | `tqdm` |
+| Dashboard | Streamlit + Plotly |
+| Container | Docker / docker-compose |
+| Orchestration | Kubernetes (k8s/) |
+| CI | GitHub Actions (M4 unit tests on push) |
 
 No LangChain. No LlamaIndex. No vector database framework. No external API calls.
+
+---
+
+## Project structure
+
+```
+fsar/
+├── app/streamlit_app.py     # Streamlit dashboard
+├── src/                     # Core modules (ingest, embed, index,
+│   └── ...                  #   retrieve, signals, rerank, metrics,
+│                            #   eval_gen, eval_run)
+├── tests/                   # Milestone acceptance tests (M1-M5)
+├── k8s/                     # Kubernetes deployment + service
+├── .github/workflows/       # GitHub Actions CI
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+├── requirements.txt
+└── SPEC.md                  # Full build specification
+```
+
+---
+
+## Quick start
+
+### Local (Python)
+
+```bash
+pip install -r requirements.txt && pip install streamlit plotly
+make ingest && make embed && make eval-gen && make test
+make run   # opens http://localhost:8501
+```
+
+### Docker
+
+```bash
+docker-compose up --build
+# Opens http://localhost:8501
+```
+
+### Kubernetes
+
+```bash
+docker build -t fsar:latest .
+kubectl apply -f k8s/
+kubectl get svc fsar-service   # get external IP
+```

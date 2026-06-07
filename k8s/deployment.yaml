@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fsar
+  labels:
+    app: fsar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fsar
+  template:
+    metadata:
+      labels:
+        app: fsar
+    spec:
+      containers:
+        - name: fsar
+          image: fsar:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8501
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: artifacts
+              mountPath: /app/artifacts
+      volumes:
+        - name: artifacts
+          hostPath:
+            path: /mnt/fsar-artifacts

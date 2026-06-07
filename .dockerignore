@@ -1,0 +1,10 @@
+data/
+artifacts/
+.git/
+.idea/
+__pycache__/
+*.pyc
+*.npy
+*.parquet
+*.pkl
+synthea_1m_fhir_1_8/

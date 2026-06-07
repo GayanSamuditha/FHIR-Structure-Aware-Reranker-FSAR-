@@ -1,0 +1,24 @@
+name: FSAR CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run M1 ingest
+        run: |
+          mkdir -p data artifacts
+          echo "No data in CI — skip ingest, run unit tests only"
+      - name: Run M4 unit tests (no data required)
+        run: python tests/test_m4.py
+      - name: Lint
+        run: pip install flake8 && flake8 src/ app/ --max-line-length=100 --ignore=E501,W503
